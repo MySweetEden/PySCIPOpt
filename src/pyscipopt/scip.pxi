@@ -11267,6 +11267,21 @@ cdef class Model:
             SCIPsetMessagehdlrLogfile(self._scip, c_path)
         else:
             SCIPsetMessagehdlrLogfile(self._scip, NULL)
+    
+    def setTracefile(self, path, mode="a"):
+        """
+        Enable or disable structured trace output to a file.
+
+        Trace output is a machine-readable JSONL format, separate from the human-readable log controlled by setLogfile().
+
+        Parameters
+        ----------
+        path : str or None
+            Path to trace file, or None to disable tracing.
+        mode : str
+            "a" (append, default) or "w" (overwrite).
+        """
+        pass
 
     # Parameter Methods
 
