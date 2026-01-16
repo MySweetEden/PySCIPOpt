@@ -7,6 +7,7 @@ import os
 import sys
 import warnings
 import locale
+import json
 
 cimport cython
 from cpython cimport Py_INCREF, Py_DECREF
@@ -8495,9 +8496,15 @@ cdef class Model:
         PY_SCIP_CALL(SCIPsolve(self._scip))
         self._bestSol = Solution.create(self._scip, SCIPgetBestSol(self._scip))
         if self._tracefile_path:
-            import json
             with open(self._tracefile_path, self._tracefile_mode) as f:
-                event = {"type": "solve_finish"}
+                event = {
+                    "type": "solve_finish",
+                    "best_primal": self.getObjVal() if self.getNSols() > 0 else None,
+                    "best_dual": self.getDualbound(),
+                    "gap": self.getGap(),
+                    "nnodes": self.getNNodes(),
+                    "nsol": self.getNSols(),
+                }
                 f.write(json.dumps(event) + "\n")
 
     def optimizeNogil(self):
