@@ -2228,9 +2228,9 @@ cdef class Model:
     cdef _benders_subproblems
     # store iis, if found
     cdef SCIP_IIS* _iis
-    cdef public _tracefile_path
-    cdef public _tracefile_mode
-    cdef public _tracefile_handle
+    cdef _tracefile_path
+    cdef _tracefile_mode
+    cdef _tracefile_handle
 
     @staticmethod
     cdef create(SCIP* scip)
