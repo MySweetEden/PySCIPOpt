@@ -2816,6 +2816,8 @@ cdef class Model:
         self._generated_event_handlers_count = 0
         self._benders_subproblems = []  # Keep references to Benders subproblem Models
         self._iis = NULL
+        self._tracefile_path = None
+        self._tracefile_mode = "a"
 
         if not createscip:
             # if no SCIP instance should be created, then an empty Model object is created.
@@ -11281,7 +11283,8 @@ cdef class Model:
         mode : str
             "a" (append, default) or "w" (overwrite).
         """
-        pass
+        self._tracefile_path = path
+        self._tracefile_mode = mode
 
     # Parameter Methods
 
