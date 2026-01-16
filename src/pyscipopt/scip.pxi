@@ -8494,6 +8494,11 @@ cdef class Model:
         """Optimize the problem."""
         PY_SCIP_CALL(SCIPsolve(self._scip))
         self._bestSol = Solution.create(self._scip, SCIPgetBestSol(self._scip))
+        if self._tracefile_path:
+            import json
+            with open(self._tracefile_path, self._tracefile_mode) as f:
+                event = {"type": "solve_finish"}
+                f.write(json.dumps(event) + "\n")
 
     def optimizeNogil(self):
         """Optimize the problem without GIL."""
