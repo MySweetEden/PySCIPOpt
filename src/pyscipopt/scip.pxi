@@ -2783,15 +2783,7 @@ class _TraceEventHandler(Eventhdlr):
 
     def eventexec(self, event):
         if event.getType() == SCIP_EVENTTYPE_BESTSOLFOUND:
-            f = self.model._tracefile_handle
-            if f:
-                ev = {
-                    "type": "solution_update",
-                    "t": self.model.getSolvingTime(),
-                    "best_primal": self.model.getPrimalbound(),
-                    "best_dual": self.model.getDualbound(),
-                }
-                f.write(json.dumps(ev) + "\n")
+            self.model._write_trace_event("solution_update")
 
 
 # - remove create(), includeDefaultPlugins(), createProbBasic() methods
@@ -8522,22 +8514,13 @@ cdef class Model:
             handler = _TraceEventHandler()
             self.includeEventhdlr(handler, "trace_handler", "Trace event handler")
 
-            try:
-                PY_SCIP_CALL(SCIPsolve(self._scip))
-            finally:
-                if tracefile:
-                    event = {
-                        "type": "solve_finish",
-                        "t": self.getSolvingTime(),
-                        "best_primal": self.getPrimalbound() if self.getNSols() > 0 else None,
-                        "best_dual": self.getDualbound(),
-                        "gap": self.getGap(),
-                        "nnodes": self.getNNodes(),
-                        "nsol": self.getNSols(),
-                    }
-                    tracefile.write(json.dumps(event) + "\n")
-                    tracefile.close()
-                    self._tracefile_handle = None
+        try:
+            PY_SCIP_CALL(SCIPsolve(self._scip))
+        finally:
+            self._write_trace_event("solve_finish")
+            if tracefile:
+                tracefile.close()
+                self._tracefile_handle = None
 
         self._bestSol = Solution.create(self._scip, SCIPgetBestSol(self._scip))
 
@@ -11332,6 +11315,22 @@ cdef class Model:
         """
         self._tracefile_path = path
         self._tracefile_mode = mode
+
+    def _write_trace_event(self, event_type):
+        """Write a trace event to the trace file."""
+        f = self._tracefile_handle
+        if f:
+            ev = {
+                "type": event_type,
+                "t": self.getSolvingTime(),
+                "best_primal": self.getPrimalbound(),
+                "best_dual": self.getDualbound(),
+                "gap": self.getGap(),
+                "nnodes": self.getNNodes(),
+                "nsol": self.getNSols(),
+            }
+            f.write(json.dumps(ev) + "\n")
+
 
     # Parameter Methods
 
