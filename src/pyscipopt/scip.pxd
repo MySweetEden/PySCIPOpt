@@ -2230,6 +2230,7 @@ cdef class Model:
     cdef SCIP_IIS* _iis
     cdef public _tracefile_path
     cdef public _tracefile_mode
+    cdef public _tracefile_handle
 
     @staticmethod
     cdef create(SCIP* scip)

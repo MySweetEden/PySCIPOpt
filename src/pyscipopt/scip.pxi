@@ -2772,6 +2772,27 @@ cdef class IIS:
 
        PY_SCIP_CALL(SCIPiisGreedyMakeIrreducible(self._iis))
 
+class _TraceEventHandler(Eventhdlr):
+    """Internal event handler for trace output."""
+
+    def eventinit(self):
+        self.model.catchEvent(SCIP_EVENTTYPE_BESTSOLFOUND, self)
+
+    def eventexit(self):
+        self.model.dropEvent(SCIP_EVENTTYPE_BESTSOLFOUND, self)
+
+    def eventexec(self, event):
+        if event.getType() == SCIP_EVENTTYPE_BESTSOLFOUND:
+            f = self.model._tracefile_handle
+            if f:
+                ev = {
+                    "type": "solution_update",
+                    "t": self.model.getSolvingTime(),
+                    "best_primal": self.model.getPrimalbound(),
+                    "best_dual": self.model.getDualbound(),
+                }
+                f.write(json.dumps(ev) + "\n")
+
 
 # - remove create(), includeDefaultPlugins(), createProbBasic() methods
 # - replace free() by "destructor"
@@ -2819,6 +2840,7 @@ cdef class Model:
         self._iis = NULL
         self._tracefile_path = None
         self._tracefile_mode = "a"
+        self._tracefile_handle = None
 
         if not createscip:
             # if no SCIP instance should be created, then an empty Model object is created.
@@ -8493,19 +8515,32 @@ cdef class Model:
 
     def optimize(self):
         """Optimize the problem."""
-        PY_SCIP_CALL(SCIPsolve(self._scip))
-        self._bestSol = Solution.create(self._scip, SCIPgetBestSol(self._scip))
+        tracefile = None
         if self._tracefile_path:
-            with open(self._tracefile_path, self._tracefile_mode) as f:
-                event = {
-                    "type": "solve_finish",
-                    "best_primal": self.getObjVal() if self.getNSols() > 0 else None,
-                    "best_dual": self.getDualbound(),
-                    "gap": self.getGap(),
-                    "nnodes": self.getNNodes(),
-                    "nsol": self.getNSols(),
-                }
-                f.write(json.dumps(event) + "\n")
+            tracefile = open(self._tracefile_path, self._tracefile_mode)
+            self._tracefile_handle = tracefile
+            handler = _TraceEventHandler()
+            self.includeEventhdlr(handler, "trace_handler", "Trace event handler")
+
+            try:
+                PY_SCIP_CALL(SCIPsolve(self._scip))
+            finally:
+                if tracefile:
+                    event = {
+                        "type": "solve_finish",
+                        "t": self.getSolvingTime(),
+                        "best_primal": self.getPrimalbound() if self.getNSols() > 0 else None,
+                        "best_dual": self.getDualbound(),
+                        "gap": self.getGap(),
+                        "nnodes": self.getNNodes(),
+                        "nsol": self.getNSols(),
+                    }
+                    tracefile.write(json.dumps(event) + "\n")
+                    tracefile.close()
+                    self._tracefile_handle = None
+
+        self._bestSol = Solution.create(self._scip, SCIPgetBestSol(self._scip))
+
 
     def optimizeNogil(self):
         """Optimize the problem without GIL."""
