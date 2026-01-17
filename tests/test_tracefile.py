@@ -26,11 +26,17 @@ def test_tracefile_basic(tmp_path):
 
     assert "solve_finish" in types
 
+    required_fields = {
+        "type",
+        "time",
+        "primalbound",
+        "dualbound",
+        "gap",
+        "nodes",
+        "nsol",
+    }
     for e in events:
-        assert "type" in e
-        assert "t" in e
-        assert "best_primal" in e
-        assert "best_dual" in e
+        assert required_fields <= set(e.keys())
 
 
 def test_tracefile_none(tmp_path):

@@ -11322,11 +11322,11 @@ cdef class Model:
         if f:
             ev = {
                 "type": event_type,
-                "t": self.getSolvingTime(),
-                "best_primal": self.getPrimalbound(),
-                "best_dual": self.getDualbound(),
+                "time": self.getSolvingTime(),
+                "primalbound": self.getPrimalbound(),
+                "dualbound": self.getDualbound(),
                 "gap": self.getGap(),
-                "nnodes": self.getNNodes(),
+                "nodes": self.getNNodes(),
                 "nsol": self.getNSols(),
             }
             f.write(json.dumps(ev) + "\n")
